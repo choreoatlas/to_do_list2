@@ -1,0 +1,49 @@
+{
+  "schema": "todo_function_evidence_requirements.v0.1",
+  "revision_binding": "git head SHA at observation time",
+  "functions": [
+    {
+      "function_id": "FL-capture",
+      "claim": "A non-empty title can be captured as a new todo and invalid empty input is rejected without mutating existing data.",
+      "tests": ["StoreEvidenceTests.test_FL_capture_and_review", "StoreEvidenceTests.test_FL_capture_rejects_empty_title_without_mutating_collection", "HttpEvidenceTests.test_FL_capture_review_revise_progress_remove_over_http", "HttpEvidenceTests.test_negative_http_cases_fail_cleanly"],
+      "limits": ["single-user local process", "SQLite local file"]
+    },
+    {
+      "function_id": "FL-review",
+      "claim": "The current todo collection can be read through the store and HTTP API.",
+      "tests": ["StoreEvidenceTests.test_FL_capture_and_review", "HttpEvidenceTests.test_FL_capture_review_revise_progress_remove_over_http"],
+      "limits": ["no pagination requirement", "single-user local process"]
+    },
+    {
+      "function_id": "FL-revise",
+      "claim": "An existing todo title can be changed and missing items fail cleanly.",
+      "tests": ["StoreEvidenceTests.test_FL_revise", "HttpEvidenceTests.test_FL_capture_review_revise_progress_remove_over_http", "HttpEvidenceTests.test_negative_http_cases_fail_cleanly"],
+      "limits": ["single-user local process"]
+    },
+    {
+      "function_id": "FL-progress",
+      "claim": "An existing todo can transition complete and incomplete.",
+      "tests": ["StoreEvidenceTests.test_FL_progress_complete_and_reopen", "HttpEvidenceTests.test_FL_capture_review_revise_progress_remove_over_http"],
+      "limits": ["boolean completion state only"]
+    },
+    {
+      "function_id": "FL-remove",
+      "claim": "An existing todo can be deleted and no longer appears afterward; missing deletes do not create state.",
+      "tests": ["StoreEvidenceTests.test_FL_remove", "HttpEvidenceTests.test_FL_capture_review_revise_progress_remove_over_http"],
+      "limits": ["hard delete; no recovery claim"]
+    },
+    {
+      "function_id": "FL-durable",
+      "claim": "Committed todo state survives reopening the SQLite-backed store.",
+      "tests": ["StoreEvidenceTests.test_FL_durable_survives_store_restart"],
+      "limits": ["store restart evidence only", "no crash-recovery or remote durability claim"]
+    },
+    {
+      "function_id": "FL-browser",
+      "claim": "The browser entry page and JavaScript client are served and the client is wired to the Todo HTTP API.",
+      "tests": ["HttpEvidenceTests.test_FL_browser_assets_are_served_and_wired_to_api"],
+      "limits": ["asset/API wiring only", "no cross-browser usability study"]
+    }
+  ],
+  "judgment": "none; this file defines evidence expectations only"
+}

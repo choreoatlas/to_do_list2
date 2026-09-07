@@ -1,0 +1,49 @@
+{
+  "schema": "todo_execution_design.v0.1",
+  "subject": "todo-list-reference",
+  "execution_loops": [
+    {
+      "id": "EL-model-validation",
+      "boundary": "Todo data shape and input validation",
+      "owned_paths": ["todo/model.py"],
+      "supports": ["FL-capture", "FL-revise", "FL-progress"]
+    },
+    {
+      "id": "EL-persistence",
+      "boundary": "SQLite-backed todo repository and durable state operations",
+      "owned_paths": ["todo/store.py"],
+      "supports": ["FL-capture", "FL-review", "FL-revise", "FL-progress", "FL-remove", "FL-durable"]
+    },
+    {
+      "id": "EL-http",
+      "boundary": "HTTP routing, request parsing and API response behavior",
+      "owned_paths": ["todo/http.py"],
+      "supports": ["FL-capture", "FL-review", "FL-revise", "FL-progress", "FL-remove", "FL-browser"]
+    },
+    {
+      "id": "EL-browser-ui",
+      "boundary": "Browser presentation and user interaction",
+      "owned_paths": ["static/index.html", "static/app.js", "static/styles.css"],
+      "supports": ["FL-browser"]
+    }
+  ],
+  "relations": [
+    {"type":"supports","source":"EL-model-validation","target":"FL-capture"},
+    {"type":"supports","source":"EL-model-validation","target":"FL-revise"},
+    {"type":"supports","source":"EL-model-validation","target":"FL-progress"},
+    {"type":"supports","source":"EL-persistence","target":"FL-capture"},
+    {"type":"supports","source":"EL-persistence","target":"FL-review"},
+    {"type":"supports","source":"EL-persistence","target":"FL-revise"},
+    {"type":"supports","source":"EL-persistence","target":"FL-progress"},
+    {"type":"supports","source":"EL-persistence","target":"FL-remove"},
+    {"type":"supports","source":"EL-persistence","target":"FL-durable"},
+    {"type":"supports","source":"EL-http","target":"FL-capture"},
+    {"type":"supports","source":"EL-http","target":"FL-review"},
+    {"type":"supports","source":"EL-http","target":"FL-revise"},
+    {"type":"supports","source":"EL-http","target":"FL-progress"},
+    {"type":"supports","source":"EL-http","target":"FL-remove"},
+    {"type":"supports","source":"EL-http","target":"FL-browser"},
+    {"type":"supports","source":"EL-browser-ui","target":"FL-browser"}
+  ],
+  "status": "design_only_no_execution_observation_yet"
+}

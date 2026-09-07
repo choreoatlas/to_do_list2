@@ -1,0 +1,8 @@
+body { font-family: sans-serif; margin: 0; background: #f6f7f9; }
+main { max-width: 640px; margin: 48px auto; background: white; padding: 24px; border-radius: 12px; }
+form { display: flex; gap: 8px; }
+input[type="text"], #new-title { flex: 1; padding: 10px; }
+ul { list-style: none; padding: 0; }
+li { display: grid; grid-template-columns: auto 1fr auto auto; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid #ddd; }
+.completed { text-decoration: line-through; opacity: 0.6; }
+#error { min-height: 1.2em; }

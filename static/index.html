@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo List</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main>
+    <h1>Todo List</h1>
+    <form id="create-form">
+      <input id="new-title" maxlength="200" required placeholder="What needs doing?">
+      <button type="submit">Add</button>
+    </form>
+    <p id="error" role="alert"></p>
+    <ul id="todos"></ul>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

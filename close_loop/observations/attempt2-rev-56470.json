@@ -1,0 +1,33 @@
+{
+  "schema": "todo_execution_observation.v0.1",
+  "attempt": 2,
+  "revision": "56470b10dbe53e9a313fb77b703a0a3497f039db",
+  "branch": "close-loop/todo-v2-native",
+  "actor": "AI implementation actor",
+  "observed_execution_entities": [
+    {"id":"EL-model-validation","paths":["todo/model.py"]},
+    {"id":"EL-persistence","paths":["todo/store.py"]},
+    {"id":"EL-http","paths":["todo/http.py"]},
+    {"id":"EL-browser-ui","paths":["static/index.html","static/app.js","static/styles.css"]}
+  ],
+  "evidence": [
+    {
+      "id": "EV-ci-34122761534",
+      "source": "github-actions",
+      "pointer": "github:actions/run/34122761534",
+      "subject": "revision 56470b10dbe53e9a313fb77b703a0a3497f039db",
+      "claim": "The function-scoped automated evidence test suite completed successfully for this exact revision in the pull_request workflow.",
+      "method": "GitHub Actions ubuntu-latest, Python 3.12, python -m unittest discover -s tests -v",
+      "actor": "GitHub Actions runner",
+      "revision": "56470b10dbe53e9a313fb77b703a0a3497f039db",
+      "scope": "automated repository tests",
+      "limits": [
+        "does not prove browser usability beyond tested asset/API wiring",
+        "does not prove production readiness",
+        "does not constitute Function or Governance judgment"
+      ],
+      "result": "success"
+    }
+  ],
+  "status": "execution_observed_evidence_recorded_no_upper_layer_judgment"
+}
