@@ -70,6 +70,14 @@ class TodoHttpTests(unittest.TestCase):
         data = None if not raw else json.loads(raw)
         return response.status, data
 
+    def test_browser_entry_point_is_served(self) -> None:
+        self.connection.request("GET", "/")
+        response = self.connection.getresponse()
+        body = response.read().decode("utf-8")
+        self.assertEqual(200, response.status)
+        self.assertIn("Todo List", body)
+        self.assertIn("/app.js", body)
+
     def test_user_flow(self) -> None:
         status, created = self.request("POST", "/api/todos", {"title": "Buy milk"})
         self.assertEqual(201, status)
