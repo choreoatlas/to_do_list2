@@ -1,0 +1,94 @@
+{
+  "schema": "todo_close_loop_native.v0.1",
+  "subject": {
+    "id": "todo-list-reference",
+    "kind": "software_product",
+    "commission_ref": "github:issue/1"
+  },
+  "governance_need": {
+    "id": "GN1",
+    "target": "An ordinary user can reliably manage a personal todo list through a browser, with durable local persistence and safe handling of invalid input.",
+    "domain": "reference-sample",
+    "scope": "single-user local reference application",
+    "limits": [
+      "no authentication or multi-user isolation",
+      "no remote synchronization",
+      "no production hosting claim"
+    ],
+    "current": "No implementation exists on main beyond the commission record.",
+    "gap": "All user-visible behavior and implementation evidence are absent."
+  },
+  "function_loops": [
+    {
+      "id": "FL-capture",
+      "upstream_need": "GN1",
+      "target": "User can create a todo with a non-empty title and receive the created item.",
+      "current": "not implemented",
+      "gap": "create behavior absent",
+      "required_evidence": ["automated API/store behavior", "invalid-title negative case"]
+    },
+    {
+      "id": "FL-review",
+      "upstream_need": "GN1",
+      "target": "User can view the current todo collection and item state.",
+      "current": "not implemented",
+      "gap": "list/read behavior absent",
+      "required_evidence": ["automated list/read behavior"]
+    },
+    {
+      "id": "FL-revise",
+      "upstream_need": "GN1",
+      "target": "User can change an existing todo title without corrupting other data.",
+      "current": "not implemented",
+      "gap": "edit behavior absent",
+      "required_evidence": ["automated edit behavior", "missing-item negative case"]
+    },
+    {
+      "id": "FL-progress",
+      "upstream_need": "GN1",
+      "target": "User can mark a todo complete and later incomplete.",
+      "current": "not implemented",
+      "gap": "completion-state behavior absent",
+      "required_evidence": ["automated complete/reopen behavior"]
+    },
+    {
+      "id": "FL-remove",
+      "upstream_need": "GN1",
+      "target": "User can delete an existing todo and it no longer appears afterward.",
+      "current": "not implemented",
+      "gap": "delete behavior absent",
+      "required_evidence": ["automated delete behavior", "missing-item negative case"]
+    },
+    {
+      "id": "FL-durable",
+      "upstream_need": "GN1",
+      "target": "Committed todo state survives application/store restart.",
+      "current": "not implemented",
+      "gap": "durable persistence absent",
+      "required_evidence": ["restart/reopen persistence test"]
+    },
+    {
+      "id": "FL-browser",
+      "upstream_need": "GN1",
+      "target": "User can perform the supported todo actions from a simple browser interface.",
+      "current": "not implemented",
+      "gap": "browser interaction path absent",
+      "required_evidence": ["UI asset served", "browser path wired to API"]
+    }
+  ],
+  "judgment_policy": {
+    "implementation_success_is_not_function_validity": true,
+    "test_success_is_not_governance_acceptance": true,
+    "function_judgment_requires_claim_specific_evidence": true,
+    "governance_judgment_requires_complete_required_function_basis": true,
+    "missing_or_ambiguous_basis": "blocked"
+  },
+  "actors": {
+    "commissioner": "human owner who supplied product goal",
+    "implementation_actor": "AI developer",
+    "material_truth_sources": ["git", "github-actions", "filesystem/runtime"],
+    "function_assessor": "must be explicitly recorded when judgment occurs",
+    "governance_actor": "must be explicitly recorded when admission occurs"
+  },
+  "status": "development_model_only_no_function_or_governance_judgment"
+}
