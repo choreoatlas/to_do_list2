@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo List</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="card" aria-labelledby="page-title">
+      <header class="hero">
+        <p class="eyebrow">TODAY</p>
+        <h1 id="page-title">Todo List</h1>
+        <p class="subtitle">Keep the next thing clear.</p>
+      </header>
+
+      <form id="todo-form" class="create-form">
+        <label class="sr-only" for="new-title">New todo</label>
+        <input id="new-title" name="title" maxlength="200" autocomplete="off" placeholder="What needs doing?" required>
+        <button type="submit">Add</button>
+      </form>
+
+      <p id="error" class="error" role="alert" hidden></p>
+      <ul id="todo-list" class="todo-list" aria-live="polite"></ul>
+      <p id="empty-state" class="empty-state">Nothing here yet.</p>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
