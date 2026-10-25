@@ -4,6 +4,7 @@ import json
 import tempfile
 import threading
 import unittest
+from dataclasses import asdict
 from http.client import HTTPConnection
 from pathlib import Path
 
@@ -66,7 +67,8 @@ class HttpEvidenceTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
         static = Path(__file__).resolve().parents[1] / "static"
-        self.server = make_server("127.0.0.1", 0, root / "api.sqlite3", static)
+        self.db = root / "api.sqlite3"
+        self.server = make_server("127.0.0.1", 0, self.db, static)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.connection = HTTPConnection("127.0.0.1", self.server.server_port, timeout=3)
@@ -113,6 +115,61 @@ class HttpEvidenceTests(unittest.TestCase):
         self.assertEqual(204, status)
         status, listed = self.request("GET", "/api/todos")
         self.assertEqual([], listed)
+
+    def test_invalid_patch_preserves_entire_persisted_collection(self) -> None:
+        _, target = self.request("POST", "/api/todos", {"title": "Keep target"})
+        self.request("POST", "/api/todos", {"title": "Unrelated item"})
+        path = f"/api/todos/{target['id']}"
+        cases = [
+            {"title": None},
+            {"completed": None},
+            {"title": None, "completed": True},
+            {"title": "Changed", "completed": None},
+            {"title": 42, "completed": True},
+            {"title": [], "completed": True},
+            {"title": "Changed", "completed": 1},
+            {"title": "Changed", "completed": "false"},
+            {"title": "", "completed": True},
+            {"title": "   ", "completed": True},
+            {"title": "x" * 201, "completed": True},
+            {},
+        ]
+        for payload in cases:
+            with self.subTest(payload=payload):
+                _, before = self.request("GET", "/api/todos")
+                status, body = self.request("PATCH", path, payload)
+                # Observe persistence even when the HTTP status assertion fails.
+                with self.subTest(proof="response"):
+                    self.assertEqual(400, status)
+                    self.assertIn("error", body)
+                with self.subTest(proof="GET collection"):
+                    status, after = self.request("GET", "/api/todos")
+                    self.assertEqual(200, status)
+                    self.assertEqual(before, after)
+                with self.subTest(proof="reopened SQLite collection"):
+                    self.assertEqual(before, [asdict(todo) for todo in TodoStore(self.db).list()])
+
+    def test_valid_partial_and_mixed_patch_preserve_omission_and_false(self) -> None:
+        _, target = self.request("POST", "/api/todos", {"title": "Original"})
+        _, unrelated = self.request("POST", "/api/todos", {"title": "Unrelated item"})
+        path = f"/api/todos/{target['id']}"
+        cases = [
+            ({"completed": True}, "Original", True),
+            ({"title": "  Revised  "}, "Revised", True),
+            ({"completed": False}, "Revised", False),
+            ({"title": "Both", "completed": True}, "Both", True),
+            ({"title": "  Final  ", "completed": False}, "Final", False),
+        ]
+        for payload, title, completed in cases:
+            with self.subTest(payload=payload):
+                expected = {"id": target["id"], "title": title, "completed": completed}
+                status, updated = self.request("PATCH", path, payload)
+                self.assertEqual(200, status)
+                self.assertEqual(expected, updated)
+                status, collection = self.request("GET", "/api/todos")
+                self.assertEqual(200, status)
+                self.assertEqual([expected, unrelated], collection)
+                self.assertEqual(collection, [asdict(todo) for todo in TodoStore(self.db).list()])
 
     def test_negative_http_cases_fail_cleanly(self) -> None:
         status, error = self.request("POST", "/api/todos", {"title": ""})
