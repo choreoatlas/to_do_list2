@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+from .model import normalize_completed, normalize_title
 from .store import TodoStore
 
 
@@ -101,8 +102,8 @@ class TodoHandler(BaseHTTPRequestHandler):
                 raise ValueError("title or completed is required")
             todo = self.store.update(
                 todo_id,
-                title=payload["title"] if "title" in payload else None,
-                completed=payload["completed"] if "completed" in payload else None,
+                title=normalize_title(payload["title"]) if "title" in payload else None,
+                completed=normalize_completed(payload["completed"]) if "completed" in payload else None,
             )
         except (ValueError, json.JSONDecodeError) as exc:
             self._json(400, {"error": str(exc)})
