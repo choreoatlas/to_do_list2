@@ -35,9 +35,12 @@ class TodoHandler(BaseHTTPRequestHandler):
         parts = [part for part in path.split("/") if part]
         if len(parts) == 3 and parts[:2] == ["api", "todos"]:
             try:
-                return int(parts[2])
+                todo_id = int(parts[2])
             except ValueError:
                 return None
+            # SQLite identifiers must fit a signed 64-bit integer. An out-of-
+            # range route is missing, rather than a database binding failure.
+            return todo_id if -(1 << 63) <= todo_id < (1 << 63) else None
         return None
 
     def _serve_static(self, relative: str, content_type: str) -> None:

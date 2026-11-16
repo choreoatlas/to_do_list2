@@ -4,9 +4,11 @@ import json
 import tempfile
 import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from http.client import HTTPConnection
 from pathlib import Path
+from unittest.mock import patch
 
 from todo.http import make_server
 from todo.store import TodoStore
@@ -89,6 +91,86 @@ class HttpEvidenceTests(unittest.TestCase):
         content_type = response.getheader("Content-Type", "")
         data = json.loads(raw) if raw and "application/json" in content_type else raw.decode("utf-8")
         return response.status, data
+
+    def independent_request(self, method: str, path: str, payload: object | None = None):
+        connection = HTTPConnection("127.0.0.1", self.server.server_port, timeout=5)
+        try:
+            body = None if payload is None else json.dumps(payload)
+            headers = {} if body is None else {"Content-Type": "application/json"}
+            connection.request(method, path, body=body, headers=headers)
+            response = connection.getresponse()
+            raw = response.read()
+            content_type = response.getheader("Content-Type", "")
+            data = json.loads(raw) if raw and "application/json" in content_type else raw.decode("utf-8")
+            return response.status, data
+        finally:
+            connection.close()
+
+    def test_regression_concurrent_partial_patches_preserve_all_changes(self) -> None:
+        _, target = self.request("POST", "/api/todos", {"title": "Original"})
+        _, unrelated = self.request("POST", "/api/todos", {"title": "Unrelated item"})
+        path = f"/api/todos/{target['id']}"
+        store = self.server.RequestHandlerClass.store
+        original_get = store.get
+        reads_complete = threading.Barrier(2)
+        requests_ready = threading.Barrier(2)
+
+        def read_before_either_update(todo_id):
+            snapshot = original_get(todo_id)
+            # Expose the old read/modify/write race deterministically. An atomic
+            # update need not call get(), so it is free to avoid this hook.
+            reads_complete.wait(timeout=3)
+            return snapshot
+
+        def update(payload):
+            requests_ready.wait(timeout=3)
+            return self.independent_request("PATCH", path, payload)
+
+        with patch.object(store, "get", side_effect=read_before_either_update):
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                renamed = executor.submit(update, {"title": "Renamed"})
+                completed = executor.submit(update, {"completed": True})
+                responses = [renamed.result(timeout=8), completed.result(timeout=8)]
+
+        for status, body in responses:
+            with self.subTest(proof="successful PATCH", body=body):
+                self.assertEqual(200, status)
+        expected = [
+            {"id": target["id"], "title": "Renamed", "completed": True},
+            unrelated,
+        ]
+        with self.subTest(proof="GET collection"):
+            status, collection = self.request("GET", "/api/todos")
+            self.assertEqual(200, status)
+            self.assertEqual(expected, collection)
+        with self.subTest(proof="reopened SQLite collection"):
+            self.assertEqual(expected, [asdict(todo) for todo in TodoStore(self.db).list()])
+
+    def test_regression_out_of_range_todo_ids_fail_cleanly_without_mutation(self) -> None:
+        self.request("POST", "/api/todos", {"title": "Keep target"})
+        self.request("POST", "/api/todos", {"title": "Unrelated item"})
+        _, before = self.request("GET", "/api/todos")
+        cases = [
+            ("above SQLite maximum", str(2**63)),
+            ("below SQLite minimum", str(-(2**63) - 1)),
+            ("1000-digit ID", "9" * 1000),
+            ("5000-digit ID", "9" * 5000),
+        ]
+        for case, todo_id in cases:
+            for method in ("GET", "PATCH", "DELETE"):
+                with self.subTest(case=case, method=method):
+                    payload = {"completed": True} if method == "PATCH" else None
+                    # A failed response must not prevent the independent data
+                    # preservation checks from observing the same request.
+                    with self.subTest(proof="controlled HTTP response"):
+                        status, _ = self.independent_request(method, f"/api/todos/{todo_id}", payload)
+                        self.assertEqual(404, status)
+                    with self.subTest(proof="GET collection"):
+                        status, after = self.request("GET", "/api/todos")
+                        self.assertEqual(200, status)
+                        self.assertEqual(before, after)
+                    with self.subTest(proof="reopened SQLite collection"):
+                        self.assertEqual(before, [asdict(todo) for todo in TodoStore(self.db).list()])
 
     def test_FL_capture_review_revise_progress_remove_over_http(self) -> None:
         status, created = self.request("POST", "/api/todos", {"title": "Buy milk"})

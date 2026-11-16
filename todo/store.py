@@ -57,17 +57,23 @@ class TodoStore:
         return self._todo(row)
 
     def update(self, todo_id: int, *, title: object | None = None, completed: object | None = None) -> Todo | None:
-        current = self.get(todo_id)
-        if current is None:
-            return None
+        assignments = []
+        values = []
+        if title is not None:
+            assignments.append("title = ?")
+            values.append(normalize_title(title))
+        if completed is not None:
+            assignments.append("completed = ?")
+            values.append(int(normalize_completed(completed)))
+        if not assignments:
+            return self.get(todo_id)
 
-        next_title = current.title if title is None else normalize_title(title)
-        next_completed = current.completed if completed is None else normalize_completed(completed)
-
+        # Update only supplied fields in one transaction. Reading an old row and
+        # writing both fields back can undo another request's partial update.
         with self._connect() as connection:
             connection.execute(
-                "UPDATE todos SET title = ?, completed = ? WHERE id = ?",
-                (next_title, int(next_completed), todo_id),
+                f"UPDATE todos SET {', '.join(assignments)} WHERE id = ?",
+                (*values, todo_id),
             )
             row = connection.execute("SELECT * FROM todos WHERE id = ?", (todo_id,)).fetchone()
         return self._todo(row)

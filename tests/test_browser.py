@@ -37,9 +37,17 @@ class BrowserFunctionEvidenceTests(unittest.TestCase):
             expect(page.get_by_text("Browser todo")).to_be_visible()
 
             checkbox = page.get_by_role("checkbox")
-            checkbox.check()
+            with page.expect_response(lambda response: response.request.method == "PATCH") as saved:
+                checkbox.check()
+            self.assertEqual(200, saved.value.status)
+            self.assertTrue(saved.value.json()["completed"])
+            page.reload()
             expect(checkbox).to_be_checked()
-            checkbox.uncheck()
+            with page.expect_response(lambda response: response.request.method == "PATCH") as saved:
+                checkbox.uncheck()
+            self.assertEqual(200, saved.value.status)
+            self.assertFalse(saved.value.json()["completed"])
+            page.reload()
             expect(checkbox).not_to_be_checked()
 
             page.once("dialog", lambda dialog: dialog.accept("Edited in browser"))
